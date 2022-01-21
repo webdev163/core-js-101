@@ -118,33 +118,99 @@ function fromJSON(proto, json) {
  *  For more examples see unit tests.
  */
 
+const countError = 'Element, id and pseudo-element should not occur more then one time inside the selector" if element, id or pseudo-element occurs twice or more times';
+
+const orderError = 'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element';
+
+class Selector {
+  constructor() {
+    this.string = '';
+    this.current = new Array(6).fill(false);
+  }
+
+  element(value) {
+    this.string += value;
+    this.current[0] = !this.current[0] ? 1 : this.current[0] += 1;
+    if (this.current[0] > 1) throw new Error(countError);
+    if (this.current.slice(-5).filter((el) => el !== false).length) throw new Error(orderError);
+    return this;
+  }
+
+  id(value) {
+    this.string += `#${value}`;
+    this.current[1] = !this.current[1] ? 1 : this.current[1] += 1;
+    if (this.current[1] > 1) throw new Error(countError);
+    if (this.current.slice(-4).filter((el) => el !== false).length
+    && this.current.slice(0, 1).filter((el) => el === false).length) throw new Error(orderError);
+    return this;
+  }
+
+  class(value) {
+    this.string += `.${value}`;
+    this.current[2] = !this.current[2] ? 1 : this.current[2] += 1;
+    if (this.current.slice(-3).filter((el) => el !== false).length
+    && this.current.slice(0, 2).filter((el) => el === false).length) throw new Error(orderError);
+    return this;
+  }
+
+  attr(value) {
+    this.string += `[${value}]`;
+    this.current[3] = !this.current[3] ? 1 : this.current[3] += 1;
+    if (this.current.slice(-2).filter((el) => el !== false).length
+    && this.current.slice(0, 3).filter((el) => el === false).length) throw new Error(orderError);
+    return this;
+  }
+
+  pseudoClass(value) {
+    this.string += `:${value}`;
+    this.current[4] = !this.current[4] ? 1 : this.current[4] += 1;
+    if (this.current.slice(-1).filter((el) => el !== false).length
+    && this.current.slice(0, 4).filter((el) => el === false).length) throw new Error(orderError);
+    return this;
+  }
+
+  pseudoElement(value) {
+    this.string += `::${value}`;
+    this.current[5] = !this.current[5] ? 1 : this.current[5] += 1;
+    if (this.current[5] > 1) throw new Error(countError);
+    return this;
+  }
+
+  stringify() {
+    return this.string;
+  }
+}
+
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    return new Selector().element(value);
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    return new Selector().id(value);
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    return new Selector().class(value);
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    return new Selector().attr(value);
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    return new Selector().pseudoClass(value);
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  pseudoElement(value) {
+    return new Selector().pseudoElement(value);
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  combine(selector1, combinator, selector2) {
+    const left = selector1.stringify();
+    const right = selector2.stringify();
+    const result = `${left} ${combinator} ${right}`;
+    return new Selector().element(result);
   },
 };
 
